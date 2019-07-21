@@ -1,6 +1,7 @@
 ﻿using Model;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
@@ -26,6 +27,51 @@ OUTPUT INSERTED.ID VALUES
             int id = Convert.ToInt32(comando.ExecuteScalar());
             comando.Connection.Close();
             return id;
+        }
+
+        public List<Tarefa> ObterTodos()
+        {
+            SqlCommand comando = Conexao.Conectar();
+            comando.CommandText = @"
+SELECT
+tarefas.id_usuario_responsavel AS 'IdUsuarioResponsável',
+tarefas.id_projeto AS 'IdProjeto',
+tarefas.categoria AS 'IdCategoria',
+tarefas.titulo AS 'Título',
+tarefas.descricao AS 'Descrição',
+tarefas.duracao AS 'Duração'
+FROM tarefas
+INNER JOIN categorias ON (tarefas.id_categoria = categorias.id)
+INNER JOIN projetos ON (tarefas.id_projeto = projetos.id)
+INNER JOIN usuarios ON (tarefas.id_usuario_responsavel = usuarios.id)
+;";
+
+            DataTable tabela = new DataTable();
+            tabela.Load(comando.ExecuteReader());
+            List<Tarefa> tarefas = new List<Tarefa>();
+            foreach (DataRow linha in tabela.Rows)
+            {
+                Tarefa tarefa = new Tarefa();
+                tarefa.Id = Convert.ToInt32(linha["TarefaId"]);
+                tarefa.Titulo = linha["Titulo"].ToString();
+                tarefa.Descricao = linha["Descrição"].ToString();
+                tarefa.Duracao = Convert.ToDateTime(linha["Duração"]);
+                tarefa.IdUsuarioResponsavel = Convert.ToInt32(linha["IdUsuarioResponsável"]);
+                tarefa.IdProjeto = Convert.ToInt32(linha["IdProjeto"]);
+                tarefa.IdCategoria = Convert.ToInt32(linha["IdCategoria"]);
+
+                tarefa.Categoria = new Categoria();
+                tarefa.Categoria.Nome = linha["CategoriaNome"].ToString();
+
+                tarefa.Projeto = new Projeto();
+                tarefa.Projeto.Nome = linha["ProjetoNome"].ToString();
+
+                tarefa.Usuario = new Usuario();
+                tarefa.Usuario.Nome = linha["UsuarioNome"].ToString();
+                tarefas.Add(tarefa);
+            }
+
+            return tarefas;
         }
     }
 }
